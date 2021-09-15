@@ -1,4 +1,4 @@
-DEFAULT_FILES = ['background1.jpg','background2.jpg','calculadora1.html']
+DEFAULT_FILES = ['background1.jpg','background2.jpg','calculadora.html']
 
 PORT = 8080
 
