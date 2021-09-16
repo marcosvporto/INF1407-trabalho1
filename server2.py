@@ -5,8 +5,34 @@ from _thread import *
 from time import sleep
 import threading
 
+conexoesSimultaneas = 0
+
 lock = threading.Lock()
 
+def tarefa(clientsocket, clientaddress):
+    global conexoesSimultaneas
+    while True:
+        request = clientsocket.recv(1024).decode("utf-8")
+        if not request:
+            break
+        pieces = request.split("\n")
+        arquivo=""
+        extensao=""
+        if (len(pieces) > 0):
+            for param in pieces: 
+                if param.split(":")[0] == "Sec-Fetch-Mode":
+                    if "navigate" in param.split(":")[1]:
+                        arquivo = pieces[0].split(" ")[1][1:]
+                        extensao = arquivo.split(".")[-1].upper()
+                        handleRequest(clientsocket, arquivo, extensao)
+    sleep(10)
+    print("Servidor desconectado de", clientaddress)
+    lock.acquire()
+    conexoesSimultaneas -= 1
+    lock.release()
+    print("%d Conexoes Simultanes" %conexoesSimultaneas)
+    clientsocket.close()
+    return 
 # def tarefa(clientsocket):
     
 #     try:
@@ -113,8 +139,11 @@ def escuta(fd):
     return
 
 def conecta(fd): 
+    global conexoesSimultaneas
     (con, cliente) = fd.accept() 
+    conexoesSimultaneas +=1
     print("Servidor conectado com", cliente) 
+    print("%d Conexoes Simultanes" %conexoesSimultaneas)
     return (con, cliente)
 
 
@@ -183,23 +212,26 @@ def main():
     try:
         while (True):
             (clientsocket, clientaddress) = conecta(serversocket)
-            while True:
-                request = clientsocket.recv(1024).decode("utf-8")
-                if not request:
-                    break
-                pieces = request.split("\n")
-                arquivo=""
-                extensao=""
-                if (len(pieces) > 0):
-                    for param in pieces: 
-                        if param.split(":")[0] == "Sec-Fetch-Mode":
-                            if "navigate" in param.split(":")[1]:
-                                arquivo = pieces[0].split(" ")[1][1:]
-                                extensao = arquivo.split(".")[-1].upper()
-                                handleRequest(clientsocket, arquivo, extensao)
-            print("Servidor desconectado de", clientaddress)
-            clientsocket.close()
-
+            # while True:
+            #     request = clientsocket.recv(1024).decode("utf-8")
+            #     if not request:
+            #         break
+            #     pieces = request.split("\n")
+            #     arquivo=""
+            #     extensao=""
+            #     if (len(pieces) > 0):
+            #         for param in pieces: 
+            #             if param.split(":")[0] == "Sec-Fetch-Mode":
+            #                 if "navigate" in param.split(":")[1]:
+            #                     arquivo = pieces[0].split(" ")[1][1:]
+            #                     extensao = arquivo.split(".")[-1].upper()
+            #                     handleRequest(clientsocket, arquivo, extensao)
+            # print("Servidor desconectado de", clientaddress)
+            # sleep(10)
+            # clientsocket.close()
+            t1 = threading.Thread(target = tarefa, args=(clientsocket,clientaddress))
+            t1.start()
+            
     except Exception as exc:
         print("Error handling connection:\n")
         print(exc)
