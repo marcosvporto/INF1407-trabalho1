@@ -6,8 +6,25 @@ from time import sleep
 import threading
 
 conexoesSimultaneas = 0
-
 lock = threading.Lock()
+
+'''
+tarefa 
+Função a ser executada dentro de uma nova thread
+Já assume que uma conexão com o cliente foi estabelecida
+Recebe o socket e o endereço do cliente
+Fica num loop infinito esperando receber uma mensagem do socket do cliente
+Foi feito uma filtragem na mensagem recebida para validar se é uma chamada HTTP contendo a solicitação do 
+arquivo
+Observando os parâmetros das requisições GET dos Browsers foi observado que o endereço solicitado apenas 
+aparece quando a chave Sec-Fetch-Mode possui o valor navigate
+Quando estamos lidando de fato com uma requisição que solicita o arquivo presente na URL, chamamos a função
+handleRequest, impementada a seguir neste documento, passando o socket do cliente, o caminho do arquivo 
+e sua extensao
+Após a execução da handleRequest, encerramos a conexão com o cliente
+
+ 
+'''
 
 def tarefa(clientsocket, clientaddress):
     global conexoesSimultaneas
@@ -25,7 +42,8 @@ def tarefa(clientsocket, clientaddress):
                         arquivo = pieces[0].split(" ")[1][1:]
                         extensao = arquivo.split(".")[-1].upper()
                         handleRequest(clientsocket, arquivo, extensao)
-    sleep(10)
+    
+    sleep(10) # Teste do Multithreading :: Remover para comportameto normal da aplicacao
     print("Servidor desconectado de", clientaddress)
     lock.acquire()
     conexoesSimultaneas -= 1
@@ -33,92 +51,27 @@ def tarefa(clientsocket, clientaddress):
     print("%d Conexoes Simultanes" %conexoesSimultaneas)
     clientsocket.close()
     return 
-# def tarefa(clientsocket):
-    
-#     try:
-#         while (True):
-#             cont = 0
-#             request = clientsocket.recv(5000).decode("utf-8")
-#             pieces = request.split("\n")
-#             arquivo=""
-#             extensao=""
-#             if (len(pieces) > 0):
-#                 for param in pieces: 
-#                     if param.split(":")[0] == "Sec-Fetch-Mode":
-#                         if "navigate" in param.split(":")[1]:
-#                             arquivo = pieces[0].split(" ")[1][1:]
-#                             extensao = arquivo.split(".")[-1].upper()
-#                             print("1")
-#                             lock.acquire()
-#                             handleRequest(clientsocket, arquivo, extensao)
-#                             lock.release() 
-#                             print("2")
-#                     else:
-#                         cont+=1
-#                         print(cont)
-#                         continue
-                
-#         print("SAIU DO LOOP")                             
-#     except Exception as exc:
-#         print("Error handling connection:\n")
-#         print(exc)
-#     print("3")
-#     clientsocket.close()
-    
-    
-#     return
 
-
-# class ClientThread(Thread):
-#     def __init__(self,clientAddress,clientsocket):
-#         Thread.__init__(self)
-#         self.clientAddress = clientAddress
-#         self.csocket = clientsocket
-#         print ("New connection added: ", clientAddress)
-#     def run(self):
-#         print ("Connection from : ", clientAddress)
-#         #self.csocket.send(bytes("Hi, This is from Server..",'utf-8'))
-#         msg = ''
-#         try:
-#             while (True):
-#                 clientsocket = conecta(serversocket)
-#                 request = clientsocket.recv(5000).decode("utf-8")
-#                 pieces = request.split("\n")
-#                 if (len(pieces) > 0):
-#                     for param in pieces: 
-#                         if param.split(":")[0] == "Sec-Fetch-Mode":
-#                             if "navigate" in param.split(":")[1]:
-#                                 arquivo = pieces[0].split(" ")[1][1:]
-#                                 extensao = arquivo.split(".")[-1].upper()
-#                 handleRequest(clientsocket, arquivo, extensao)               
-#         except Exception as exc:
-#             print("Error handling connection:\n")
-#             print(exc)
-#         print ("Client at ", clientAddress , " disconnected...")
-
-
-def getEnderecoHost(porta): 
-    try: 
-        enderecoHost = getaddrinfo( 
-            None,  
-            porta,              
-            family=AF_INET,              
-            type=SOCK_STREAM,              
-            proto=IPPROTO_TCP,  
-            flags=AI_ADDRCONFIG | AI_PASSIVE)
-    except:         
-        print("Não obtive informações sobre o servidor (???)", file=stderr) 
-        abort()     
-    return enderecoHost
-
+'''
+criaSocket
+visto em sala
+'''
 def criaSocket():
     return socket(AF_INET, SOCK_STREAM)
 
 
+'''
+setMetodo
+visto em sala
+'''
 def setModo(fd): 
     fd.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1) 
     return
 
+'''
+bindaSocket
+visto em sala
+'''
 def bindaSocket(fd, porta): 
     try: 
         fd.bind(('', porta)) 
@@ -128,6 +81,11 @@ def bindaSocket(fd, porta):
         exit()     
     return
 
+
+'''
+escuta
+visto em sala
+'''
 def escuta(fd):
     try: 
         fd.listen(5) 
@@ -138,6 +96,12 @@ def escuta(fd):
     print("Iniciando o serviço"); 
     return
 
+'''
+conecta
+visto em sala
+incrementa a variável conexoesSimultaneas para testar o multithreading
+'''
+
 def conecta(fd): 
     global conexoesSimultaneas
     (con, cliente) = fd.accept() 
@@ -147,8 +111,18 @@ def conecta(fd):
     return (con, cliente)
 
 
+'''
+handlePageNotFound
+É invocada pela função handleRequest quando esta não consegue abrir o documento requerido na URL do metodo
+GET do cliente
+Chama a função handleRequest de forma recursiva passando o socket do cliete, o indice da lista recebido, 
+o caminho e nome do arquivo presente na lista dos arquivos padrões do módulo de configuração, 
+referente ao indice da lista recebido, e a extensão do arquivo correspondente 
+Se o indice recebido estiver fora da lista, a página de error 404 padrão presente no módulo de configuração
+é exibida 
+Assume-se que a página de erro será no formato html
+'''
 def handlePageNotFound(clientsocket, indice):
-    print(indice)
     if indice < len(DEFAULT_FILES):
         arquivo = DEFAULT_FILES[indice]
         extensao = arquivo.split(".")[-1]
@@ -169,7 +143,26 @@ def handlePageNotFound(clientsocket, indice):
     return
     
 
+'''
+handleRequest
 
+Recebe o socket do cliente, o caminho e nome do arquivo, sua extensão e um indice
+o indicie é utilizado para saber qual é o indice da lista de arquivos padrão presente no módulo de 
+configuração deverá ser usado caso não seja possível acessar o arquivo solicitado
+a resposta ao cliente dependerá da extensão do arquivo
+se o arquivo solicitado for imagem ou gif, lemos os bytes e retornamos ao cliente a mensagem fragmentada
+pois não é possivel concatenar bytes com array em python
+
+Se o arquivo solicitado for de texto (HTML, JS) podemos enviar toda a resposta de uma vez codficada em utf-8
+
+caso não seja possível abrir o arquivo solicitado,ou caso o arquivo solicitado venha sem extensao, 
+a função handleePageNotFound é chamada
+
+a cada vez que chamamos ahandlePageNotFound incrementamos o indice solicitado, para percorrer todos os
+indices da lista de arquivops padrão presente no módulo de configuração antes que enviemos a página de 
+erro 404
+
+'''
 def handleRequest(clientsocket, arquivo, extensao,indice=0):
     if extensao.upper() in ["JPEG", "JPG", "PNG" , "GIF"]:
         try:
@@ -202,36 +195,19 @@ def handleRequest(clientsocket, arquivo, extensao,indice=0):
     return
 
 def main():
-    enderecoHost = getEnderecoHost(PORT)
-    print(enderecoHost)
+    if not (isinstance(DEFAULT_FILES, list)  and isinstance(PORT,int)  and isinstance(FILE_PATH,str) and isinstance(ERROR_PAGE,str)):
+        print("Módulo de Configuração Inconsistente")
+        exit()
     serversocket = criaSocket()
     setModo(serversocket)
     bindaSocket(serversocket, PORT)
-    print("Servidor pronto em {server}:{port}".format(server = enderecoHost, port = PORT))
+    print("Servidor pronto em http://localhost:{}".format(PORT))
     escuta(serversocket)
     try:
         while (True):
             (clientsocket, clientaddress) = conecta(serversocket)
-            # while True:
-            #     request = clientsocket.recv(1024).decode("utf-8")
-            #     if not request:
-            #         break
-            #     pieces = request.split("\n")
-            #     arquivo=""
-            #     extensao=""
-            #     if (len(pieces) > 0):
-            #         for param in pieces: 
-            #             if param.split(":")[0] == "Sec-Fetch-Mode":
-            #                 if "navigate" in param.split(":")[1]:
-            #                     arquivo = pieces[0].split(" ")[1][1:]
-            #                     extensao = arquivo.split(".")[-1].upper()
-            #                     handleRequest(clientsocket, arquivo, extensao)
-            # print("Servidor desconectado de", clientaddress)
-            # sleep(10)
-            # clientsocket.close()
             t1 = threading.Thread(target = tarefa, args=(clientsocket,clientaddress))
-            t1.start()
-            
+            t1.start()       
     except Exception as exc:
         print("Error handling connection:\n")
         print(exc)
