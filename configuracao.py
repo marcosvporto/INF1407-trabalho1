@@ -17,8 +17,8 @@ PORT  = 8080
 '''
 FILE_PATH diretório raiz onde estarão armazenados os arquivos a serem solicitados e enviados
 Ex:
-'/home/pages'
-"C:/User/username/Documents"
+'/home/Documents/views/'
+"C:/User/username/Documents/views/"
 '''
 FILE_PATH = "C:/Users/marco/Desktop/INF1407/trabalho1/views/"
 

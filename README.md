@@ -33,7 +33,10 @@ localhost:porta/subpasta/nomedoarquivo.extensao
 
 **Testes**
 - Ao acessar arquivos presentes no diretório raiz :: Comportamento Esperado
-- Ao acessar arquivos ausentes no diretório raiz e com pelo menos 1 arquivo da lista padrão presente no diretório em qualquer indice da lista :: Comportamento Esperado 
-- Ao acessar arquivos ausentes no diretório raiz e com nenhum arquivo da lista padrão presente no diretório em qualquer indice da lista :: Comportamento Esperado
+- Ao acessar arquivos ausentes no diretório raiz e com pelo menos 1 arquivo da lista padrão presente no diretório  :: Comportamento Esperado 
+- Ao acessar arquivos ausentes no diretório raiz e com nenhum arquivo da lista padrão presente no diretório :: Comportamento Esperado
 - Ao configurar incorretamente o módulo de configuração :: Comportamento Esperado
-- Ao acessar arquivos html com referência a um código Javascript :: Comportamento Inesperado (Não Resposta) 
+- Ao acessar arquivos html com referência a um código Javascript :: Comportamento Inesperado (Não Resposta)
+- Ao acessar arquivos js :: Comportamento Inesperado (Download e não exibição)
+- Ao acessar gifs :: Comportamento Inesperado (GIF é dinâmico por um curto período, e não de forma continua) 
+- Ao tentar se conectar com vários clientes simultâneamente (Multithreading) :: Comportamento Esperado 
