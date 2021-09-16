@@ -11,7 +11,7 @@ PORT porta a escutar as requisições do cliente
 Ex:
 80 ou 8080
 '''
-PORT  = 80
+PORT  = 8080
 
 
 '''
